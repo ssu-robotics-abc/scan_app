@@ -1,4 +1,4 @@
-# my_barcode_app
+# scan_app
 
 A new Flutter project.
 
