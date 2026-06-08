@@ -39,6 +39,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
   Timer? _resetTimer;
   bool _isProcessing = false;
   String? _lastScannedCode;
+  final RegExp _ean13Pattern = RegExp(r'^\d{13}$');
 
   // 카메라 제어를 위한 컨트롤러
   final MobileScannerController _cameraController = MobileScannerController();
@@ -88,6 +89,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
           });
         }
       } else {
+        if (!_ean13Pattern.hasMatch(scannedValue)) return;
+
         final url = Uri.parse('http://$currentIp:8000/api/v1/scan');
         final response = await http.post(
           url,
@@ -197,6 +200,11 @@ class _ScannerScreenState extends State<ScannerScreen> {
                         final format = barcode.format;
 
                         if (value.isNotEmpty) {
+                          if (format != BarcodeFormat.qrCode &&
+                              !_ean13Pattern.hasMatch(value)) {
+                            return;
+                          }
+
                           if (value == _lastScannedCode) return;
                           _lastScannedCode = value;
                           processScannedData(value, format);
