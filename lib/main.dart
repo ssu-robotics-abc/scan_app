@@ -38,14 +38,21 @@ class _ScannerScreenState extends State<ScannerScreen> {
   Color borderColor = Colors.blueAccent;
   Timer? _resetTimer;
   bool _isProcessing = false;
-  String? _lastScannedCode;
   final RegExp _ean13Pattern = RegExp(r'^\d{13}$');
+  static const double _initialZoomScale = 0.25;
 
   // 카메라 제어를 위한 컨트롤러
-  final MobileScannerController _cameraController = MobileScannerController();
+  final MobileScannerController _cameraController = MobileScannerController(
+    formats: [BarcodeFormat.ean13, BarcodeFormat.qrCode],
+    detectionSpeed: DetectionSpeed.noDuplicates,
+    detectionTimeoutMs: 800,
+    cameraResolution: const Size(1920, 1080),
+    autoZoom: true,
+    initialZoom: _initialZoomScale,
+  );
 
   // 🌟 슬라이더를 위한 줌 배율 상태 변수 (0.0 ~ 1.0 사이의 값)
-  double _currentZoomScale = 0.0;
+  double _currentZoomScale = _initialZoomScale;
 
   final TextEditingController _ipController = TextEditingController(
     text: "203.246.36.222",
@@ -121,6 +128,29 @@ class _ScannerScreenState extends State<ScannerScreen> {
     }
   }
 
+  Barcode? _selectBestBarcode(List<Barcode> barcodes) {
+    for (final barcode in barcodes) {
+      final value = barcode.rawValue;
+      if (value == null || value.isEmpty) continue;
+
+      if (barcode.format == BarcodeFormat.ean13 &&
+          _ean13Pattern.hasMatch(value)) {
+        return barcode;
+      }
+    }
+
+    for (final barcode in barcodes) {
+      final value = barcode.rawValue;
+      if (value == null || value.isEmpty) continue;
+
+      if (barcode.format == BarcodeFormat.qrCode) {
+        return barcode;
+      }
+    }
+
+    return null;
+  }
+
   @override
   void dispose() {
     _resetTimer?.cancel();
@@ -131,6 +161,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scannerSize = MediaQuery.of(context).size.width * 0.9;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('스캐너'),
@@ -173,15 +205,15 @@ class _ScannerScreenState extends State<ScannerScreen> {
               // 스캐너 영역
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
-                width: 300,
-                height: 300,
+                width: scannerSize,
+                height: scannerSize,
                 decoration: BoxDecoration(
                   border: Border.all(color: borderColor, width: 6),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: borderColor == Colors.green
                       ? [
                           BoxShadow(
-                            color: Colors.greenAccent.withOpacity(0.6),
+                            color: Colors.greenAccent.withValues(alpha: 0.6),
                             blurRadius: 20,
                             spreadRadius: 5,
                           ),
@@ -193,43 +225,36 @@ class _ScannerScreenState extends State<ScannerScreen> {
                   child: MobileScanner(
                     controller: _cameraController,
                     onDetect: (BarcodeCapture capture) {
-                      final List<Barcode> barcodes = capture.barcodes;
-                      if (barcodes.isNotEmpty) {
-                        final barcode = barcodes.first;
-                        final value = barcode.rawValue ?? '';
-                        final format = barcode.format;
+                      if (_isProcessing) return;
 
-                        if (value.isNotEmpty) {
-                          if (format != BarcodeFormat.qrCode &&
-                              !_ean13Pattern.hasMatch(value)) {
-                            return;
-                          }
+                      final barcode = _selectBestBarcode(capture.barcodes);
+                      final value = barcode?.rawValue;
+                      final format = barcode?.format;
 
-                          if (value == _lastScannedCode) return;
-                          _lastScannedCode = value;
-                          processScannedData(value, format);
-
-                          setState(() {
-                            statusText = format == BarcodeFormat.qrCode
-                                ? '✅ QR코드 인식됨'
-                                : '✅ 바코드 인식됨';
-                          });
-
-                          HapticFeedback.lightImpact();
-                          _resetTimer?.cancel();
-                          _resetTimer = Timer(
-                            const Duration(milliseconds: 2000),
-                            () {
-                              setState(() {
-                                statusText = '인식 대기중';
-                                displayInfo = '';
-                                borderColor = Colors.blueAccent;
-                                _lastScannedCode = null;
-                              });
-                            },
-                          );
-                        }
+                      if (barcode == null || value == null || format == null) {
+                        return;
                       }
+
+                      processScannedData(value, format);
+
+                      setState(() {
+                        statusText = format == BarcodeFormat.qrCode
+                            ? '✅ QR코드 인식됨'
+                            : '✅ 바코드 인식됨';
+                      });
+
+                      HapticFeedback.lightImpact();
+                      _resetTimer?.cancel();
+                      _resetTimer = Timer(
+                        const Duration(milliseconds: 2000),
+                        () {
+                          setState(() {
+                            statusText = '인식 대기중';
+                            displayInfo = '';
+                            borderColor = Colors.blueAccent;
+                          });
+                        },
+                      );
                     },
                   ),
                 ),
