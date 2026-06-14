@@ -57,8 +57,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
   MobileScannerController _createCameraController() {
     return MobileScannerController(
       formats: [BarcodeFormat.ean13, BarcodeFormat.qrCode],
-      detectionSpeed: DetectionSpeed.noDuplicates,
-      detectionTimeoutMs: 800,
+      detectionSpeed: DetectionSpeed.normal,
+      detectionTimeoutMs: 500,
       cameraResolution: const Size(1920, 1080),
       autoZoom: _autoZoomEnabled,
       initialZoom: _initialZoomScale,
