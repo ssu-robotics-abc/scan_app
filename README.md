@@ -1,17 +1,106 @@
-# scan_app
+# Scan App
 
-A new Flutter project.
+카메라로 EAN-13 바코드를 인식하고 인식한 값을 지정한 서버로 전송하는 Flutter 스캔 앱입니다. 서버 IP를 앱 화면에서 직접 설정할 수 있고, 줌/초점/카메라 전환 같은 스캔 보조 기능을 제공합니다.
 
-## Getting Started
+## 주요 기능
 
-This project is a starting point for a Flutter application.
+- 서버 IP 설정
+- EAN-13 바코드 인식
+- 자동 줌 켜기/끄기
+- 수동 줌 배율 조절
+- 전면/후면 카메라 전환
+- 터치 위치 기준 초점 설정
+- 스캔 결과와 오류 상태 표시
+- 스캔 시 진동 피드백
 
-A few resources to get you started if this is your first Flutter project:
+## 사용 방법
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+### 1. 서버 IP 설정
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+앱 상단의 **서버 IP 주소** 입력칸에 스캔 결과를 받을 서버의 IP 주소를 입력합니다.
+
+예시:
+
+```text
+203.246.36.222
+```
+
+입력한 IP를 기준으로 앱은 다음 API에 요청을 보냅니다.
+
+- 바코드 스캔: `http://{IP}:8000/api/v1/scan`
+
+IP 주소가 비어 있거나 서버에 연결할 수 없으면 화면에 오류 메시지가 표시됩니다.
+
+### 2. 바코드 스캔
+
+카메라 영역 안에 EAN-13 바코드를 맞추면 앱이 자동으로 인식합니다.
+
+인식된 바코드는 서버로 전송됩니다.
+
+```json
+{
+  "barcode_data": "스캔한_바코드값"
+}
+```
+
+서버 응답이 성공이면 상품명이 표시되고, 등록되지 않은 상품이거나 오류가 있으면 안내 메시지가 표시됩니다.
+
+
+서버 응답이 성공이면 사용자 확인 메시지가 표시되고, 처리에 실패하면 오류 메시지가 표시됩니다.
+
+### 3. 자동 줌 설정
+
+상단 앱바의 초점 아이콘 버튼을 누르면 자동 줌을 켜거나 끌 수 있습니다.
+
+- 자동 줌 켜짐: 카메라가 인식 대상을 더 잘 잡도록 자동으로 줌을 조정합니다.
+- 자동 줌 꺼짐: 사용자가 아래 줌 슬라이더로 배율을 직접 조절합니다.
+
+자동 줌 상태를 변경하면 카메라 컨트롤러가 새 설정으로 다시 초기화됩니다.
+
+### 4. 줌 배율 설정
+
+스캔 영역 아래의 줌 슬라이더를 움직여 카메라 배율을 조절합니다.
+
+- 왼쪽: 줌 아웃
+- 오른쪽: 줌 인
+- 현재 배율은 퍼센트로 표시됩니다.
+
+초기 줌 배율은 50%로 설정되어 있습니다.
+
+### 5. 카메라 앞뒤 전환
+
+상단 앱바의 카메라 전환 버튼을 누르면 전면 카메라와 후면 카메라를 바꿀 수 있습니다.
+
+일반적인 상품 바코드 스캔에는 후면 카메라 사용을 권장합니다.
+
+### 6. 터치 초점 설정
+
+스캔 화면에서 초점을 맞추고 싶은 위치를 터치하면 해당 위치를 기준으로 카메라 초점이 설정됩니다.
+
+터치한 지점에는 잠시 초점 표시가 나타나며, 기기에서 지원하는 경우 진동 피드백도 함께 발생합니다.
+
+### 7. 스캔 상태 확인
+
+스캔 영역 테두리와 하단 문구로 현재 상태를 확인할 수 있습니다.
+
+- 파란색: 인식 대기 중
+- 초록색: 스캔 또는 서버 처리 성공
+- 주황색: 등록되지 않은 상품 또는 처리 오류
+- 빨간색: IP 누락 또는 서버 연결 실패
+
+스캔 후 상태 메시지는 약 2초 뒤 자동으로 초기화됩니다.
+
+## 개발 및 실행
+
+Flutter 의존성을 설치한 뒤 앱을 실행합니다.
+
+```bash
+flutter pub get
+flutter run
+```
+
+## 사용 기술
+
+- Flutter
+- mobile_scanner
+- http
